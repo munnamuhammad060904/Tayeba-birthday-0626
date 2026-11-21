@@ -1340,10 +1340,11 @@ function unlockPrivateMessage(){
    node.parentNode.replaceChild(frag,node);
   });
  }
+ const isMobileSequence=()=>window.matchMedia('(max-width: 768px), (pointer: coarse)').matches;
  function stageBlank(page){
   if(completed.has(page))return;
   pageItems(page).forEach(el=>{
-   wrapText(el);
+   if(!isMobileSequence())wrapText(el);
    el.style.setProperty('opacity','0','important');
    el.style.setProperty('visibility','hidden','important');
    el.style.setProperty('transform','translateY(-8px)','important');
@@ -1389,6 +1390,36 @@ function unlockPrivateMessage(){
   await wait(260);
  }
  async function enterPage(page){
+  if(isMobileSequence()){
+   if(completed.has(page)){
+    pageItems(page).forEach(el=>{
+     el.style.setProperty('opacity','1','important');
+     el.style.setProperty('visibility','visible','important');
+     el.style.transform='none';
+     el.querySelectorAll('button,.btn,[role="button"]').forEach(button=>{
+      button.style.setProperty('opacity','1','important');
+      button.style.setProperty('visibility','visible','important');
+      button.style.transform='none';
+     });
+    });
+    return;
+   }
+   completed.add(page);
+   for(const el of pageItems(page)){
+    el.style.setProperty('visibility','visible','important');
+    el.style.setProperty('opacity','1','important');
+    el.animate([
+     {opacity:0,transform:'translate3d(0,12px,0)',filter:'blur(1px)'},
+     {opacity:1,transform:'translate3d(0,0,0)',filter:'blur(0)'}
+    ],{duration:190,easing:'ease-out',fill:'both'});
+    el.querySelectorAll('button,.btn,[role="button"]').forEach(button=>{
+     button.style.setProperty('visibility','visible','important');
+     button.style.setProperty('opacity','1','important');
+     button.style.transform='none';
+    });
+   }
+   return;
+  }
   if(completed.has(page)){
    pageItems(page).forEach(el=>{
     el.style.setProperty('opacity','1','important');
@@ -1407,11 +1438,13 @@ function unlockPrivateMessage(){
   for(const el of pageItems(page))await typeElement(el);
  }
  async function leavePage(page){
-  // Animate blocks together with a light stagger; avoid multi-second serial exits.
+  // On touch/mobile devices use a short, lightweight transition to avoid
+  // blocking taps while a long character-by-character reveal is running.
+  const mobile=isMobileSequence();
   const animations=pageItems(page).map((el,i)=>el.animate([
    {opacity:1,transform:'translate3d(0,0,0)',filter:'blur(0)'},
-   {opacity:0,transform:'translate3d(0,105vh,0) rotate(5deg)',filter:'blur(3px)'}
-  ],{duration:420,delay:i*32,easing:'cubic-bezier(.55,0,.85,.35)',fill:'forwards'}));
+   {opacity:0,transform:mobile?'translate3d(0,-10px,0)':'translate3d(0,105vh,0) rotate(5deg)',filter:mobile?'blur(1px)':'blur(3px)'}
+  ],{duration:mobile?170:420,delay:mobile?0:i*32,easing:'cubic-bezier(.55,0,.85,.35)',fill:'forwards'}));
   await Promise.all(animations.map(animation=>animation.finished.catch(()=>{})));
  }
  let pendingNavigation=null;
