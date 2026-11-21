@@ -1390,9 +1390,14 @@ function unlockPrivateMessage(){
   await wait(260);
  }
  async function enterPage(page){
-  if(isMobileSequence()){
-   if(completed.has(page)){
-    pageItems(page).forEach(el=>{
+  const mobile=isMobileSequence();
+  if(mobile){
+   const items=pageItems(page);
+   const alreadySeen=completed.has(page);
+   completed.add(page);
+   const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+   if(reduceMotion){
+    items.forEach(el=>{
      el.style.setProperty('opacity','1','important');
      el.style.setProperty('visibility','visible','important');
      el.style.transform='none';
@@ -1404,20 +1409,27 @@ function unlockPrivateMessage(){
     });
     return;
    }
-   completed.add(page);
-   for(const el of pageItems(page)){
+   const animations=items.map((el,i)=>{
     el.style.setProperty('visibility','visible','important');
     el.style.setProperty('opacity','1','important');
-    el.animate([
-     {opacity:0,transform:'translate3d(0,12px,0)',filter:'blur(1px)'},
-     {opacity:1,transform:'translate3d(0,0,0)',filter:'blur(0)'}
-    ],{duration:140,easing:'ease-out',fill:'both'});
-    el.querySelectorAll('button,.btn,[role="button"]').forEach(button=>{
+    el.style.transform='none';
+    const buttons=el.querySelectorAll('button,.btn,[role="button"]');
+    buttons.forEach(button=>{
      button.style.setProperty('visibility','visible','important');
      button.style.setProperty('opacity','1','important');
      button.style.transform='none';
     });
-   }
+    // Animate only opacity and transform: avoid costly mobile blur/filter paints.
+    const delay=Math.min(i*14,84);
+    return el.animate(
+     alreadySeen
+      ? [{opacity:0,transform:'translate3d(0,7px,0)'},{opacity:1,transform:'translate3d(0,0,0)'}]
+      : [{opacity:0,transform:'translate3d(0,13px,0)'},{opacity:1,transform:'translate3d(0,0,0)'}],
+     {duration:alreadySeen?300:380,delay,easing:'cubic-bezier(.22,.75,.25,1)',fill:'both'}
+    );
+   });
+   await Promise.all(animations.map(animation=>animation.finished.catch(()=>{})));
+   items.forEach(el=>{el.style.transform='none';});
    return;
   }
   if(completed.has(page)){
@@ -1441,10 +1453,13 @@ function unlockPrivateMessage(){
   // On touch/mobile devices use a short, lightweight transition to avoid
   // blocking taps while a long character-by-character reveal is running.
   const mobile=isMobileSequence();
-  const animations=pageItems(page).map((el,i)=>el.animate([
-   {opacity:1,transform:'translate3d(0,0,0)',filter:'blur(0)'},
-   {opacity:0,transform:mobile?'translate3d(0,-10px,0)':'translate3d(0,105vh,0) rotate(5deg)',filter:mobile?'blur(1px)':'blur(3px)'}
-  ],{duration:mobile?120:420,delay:mobile?0:i*32,easing:'cubic-bezier(.55,0,.85,.35)',fill:'forwards'}));
+  const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const animations=pageItems(page).map((el,i)=>el.animate(
+   mobile
+    ? [{opacity:1,transform:'translate3d(0,0,0)'},{opacity:0,transform:'translate3d(0,-7px,0)'}]
+    : [{opacity:1,transform:'translate3d(0,0,0)',filter:'blur(0)'},{opacity:0,transform:'translate3d(0,105vh,0) rotate(5deg)',filter:'blur(3px)'}],
+   {duration:reduceMotion?1:(mobile?230:420),delay:mobile?Math.min(i*12,72):i*32,easing:mobile?'cubic-bezier(.4,0,.2,1)':'cubic-bezier(.55,0,.85,.35)',fill:'forwards'}
+  ));
   await Promise.all(animations.map(animation=>animation.finished.catch(()=>{})));
  }
  let pendingNavigation=null;
