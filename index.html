@@ -3012,18 +3012,20 @@ function makeBirthdayWish(){
       details: extra
     };
     try {
-      await fetch(SUPABASE_URL + "/rest/v1/" + TABLE, {
+      const response = await fetch(SUPABASE_URL + "/rest/v1/" + TABLE, {
         method: "POST",
         mode: "cors",
         headers: {
           "Content-Type": "application/json",
           "apikey": SUPABASE_ANON_KEY,
-          "Authorization": "Bearer " + SUPABASE_ANON_KEY,
           "Prefer": "return=minimal"
         },
         body: JSON.stringify(payload),
         keepalive: true
       });
+      if (!response.ok) {
+        console.error("[Tayeba analytics] Supabase rejected event:", response.status, await response.text());
+      }
     } catch (_) {
       // Analytics must never interrupt the birthday presentation.
     }
