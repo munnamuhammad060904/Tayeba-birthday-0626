@@ -854,7 +854,7 @@ function burst(count){const chars=['✦','✧','·','♡'];for(let i=0;i<count;i
 
   form.addEventListener('submit', async function (event) {
     event.preventDefault();
-    if (input.value === '0626') {
+    if (input.value === '2611') {
       form.querySelector('button').disabled = true;
       input.disabled = true;
       error.textContent = '';
@@ -3124,7 +3124,7 @@ function makeBirthdayWish(){
   document.addEventListener("submit", (event) => {
     if (!event.target || event.target.id !== "accessForm") return;
     const field = document.getElementById("accessCode");
-    const success = Boolean(field && field.value === "0626");
+    const success = Boolean(field && field.value === "2611");
     sendEvent(success ? "password_correct" : "password_incorrect", {
       attempt_result: success ? "correct" : "incorrect"
     });
